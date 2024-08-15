@@ -2,7 +2,10 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"net/http"
+	"os"
+	"strings"
 
 	"github.com/boltdb/bolt"
 	"github.com/labstack/echo/v4"
@@ -54,21 +57,23 @@ func getall() [][]string {
 func main() {
 	defer db.Close()
 
+	data, err := os.ReadFile("auth")
+	if err != nil {
+		log.Fatalf("Error while loading auth: %v", err)
+	}
+	auth := strings.Split(string(data), ":")
+
 	e := echo.New()
 
 	e.POST("/new", func(c echo.Context) error {
 		task := c.FormValue("task")
-
-		db.Update(func(tx *bolt.Tx) error {
-			b := tx.Bucket([]byte(bucket))
-			if b == nil {
-				b, _ = tx.CreateBucket([]byte(bucket))
-			}
-			b.Put([]byte(task), []byte("0"))
-			return nil
-		})
-
-		return c.String(http.StatusOK, "Test")
+		user := c.FormValue("user")
+		password := c.FormValue("password")
+		if user == strings.Trim(auth[0], "\n") && password == strings.Trim(auth[1], "\n") {
+			put(task, "0")
+			return c.String(http.StatusOK, "Success!\n")
+		}
+		return c.String(http.StatusOK, "Failed!\n")
 	})
 
 	e.POST("/list", func(c echo.Context) error {
