@@ -20,7 +20,7 @@ func setupdb() {
 	db.Update(func(tx *bolt.Tx) error {
 		b, err := tx.CreateBucket([]byte(bucket))
 		if err == nil {
-			b.Put([]byte("l"), []byte("0"))
+			b.Put([]byte("l"), []byte("-1"))
 		}
 		return nil
 	})
@@ -62,15 +62,15 @@ func getall() []string {
 	return r
 }
 
-func gettasks() []string {
-	r := make([]string, 0)
+func gettasks() [][]string {
+	r := make([][]string, 0)
 
 	db.View(func(tx *bolt.Tx) error {
 		b := tx.Bucket([]byte(bucket))
 
 		b.ForEach(func(k, v []byte) error {
 			if string(k) != "l" {
-				r = append(r, string(v))
+				r = append(r, []string{string(k), string(v)})
 			}
 			return nil
 		})
@@ -120,22 +120,37 @@ func main() {
 		user := c.FormValue("user")
 		password := c.FormValue("password")
 		res := "Tasks:\n"
-		r := make([]string, 0)
+		r := make([][]string, 0)
 		if user == strings.Trim(auth[0], "\n") && password == strings.Trim(auth[1], "\n") {
 			r = gettasks()
 			for i := range r {
-				t := strings.Split(r[i], "``")
+				t := strings.Split(r[i][1], "``")
 				var status string
 				if t[1] == "0" {
 					status = "Not finished"
 				} else {
 					status = "Finished"
 				}
-				res += fmt.Sprintf("%v ----- %v\n", t[0], status)
+				res += fmt.Sprintf("%v:   %v ----- %v\n", r[i][0], t[0], status)
 			}
 			return c.String(http.StatusOK, res)
 		}
 		return c.String(http.StatusOK, "Failed!\n")
 	})
+
+	e.POST("/done", func(c echo.Context) error {
+		user := c.FormValue("user")
+		password := c.FormValue("password")
+		id := c.FormValue("id")
+
+		if user == strings.Trim(auth[0], "\n") && password == strings.Trim(auth[1], "\n") {
+			v := strings.Split(string(get(id)), "``")
+			put(id, v[0]+"``1")
+
+			return c.String(http.StatusOK, "Success!\n")
+		}
+		return c.String(http.StatusOK, "Failed!\n")
+	})
+
 	e.Logger.Fatal(e.Start(":3333"))
 }
