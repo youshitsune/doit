@@ -110,9 +110,15 @@ func main() {
 		user := c.FormValue("user")
 		password := c.FormValue("password")
 		if user == strings.Trim(auth[0], "\n") && password == strings.Trim(auth[1], "\n") {
-			addtask(task)
-			return c.String(http.StatusOK, "Success!\n")
+			fmt.Println(task)
+			if task != "" && len(strings.Split(task, "``")) == 1 {
+				addtask(task)
+				return c.String(http.StatusOK, "Success!\n")
+			} else {
+				return c.NoContent(http.StatusBadRequest)
+			}
 		}
+
 		return c.String(http.StatusOK, "Failed!\n")
 	})
 
