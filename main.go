@@ -95,7 +95,7 @@ func main() {
 			}
 		}
 
-		return c.String(http.StatusOK, "Failed!\n")
+		return c.NoContent(http.StatusForbidden)
 	})
 
 	e.POST("/list", func(c echo.Context) error {
@@ -115,7 +115,7 @@ func main() {
 			}
 			return c.String(http.StatusOK, res)
 		}
-		return c.String(http.StatusOK, "Failed!\n")
+		return c.NoContent(http.StatusForbidden)
 	})
 
 	e.POST("/done", func(c echo.Context) error {
@@ -132,7 +132,7 @@ func main() {
 
 			return c.String(http.StatusOK, "Success!\n")
 		}
-		return c.String(http.StatusOK, "Failed!\n")
+		return c.NoContent(http.StatusForbidden)
 	})
 
 	e.POST("/delete", func(c echo.Context) error {
@@ -146,7 +146,7 @@ func main() {
 
 			return c.String(http.StatusOK, "Success!\n")
 		}
-		return c.String(http.StatusOK, "Failed!\n")
+		return c.NoContent(http.StatusForbidden)
 	})
 	e.Logger.Fatal(e.Start(":3333"))
 }
