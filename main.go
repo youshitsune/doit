@@ -135,5 +135,18 @@ func main() {
 		return c.String(http.StatusOK, "Failed!\n")
 	})
 
+	e.POST("/delete", func(c echo.Context) error {
+		user := c.FormValue("user")
+		password := c.FormValue("password")
+		id := c.FormValue("id")
+
+		if user == strings.Trim(auth[0], "\n") && password == strings.Trim(auth[1], "\n") {
+			que := q.NewQuery(bucket).Where(q.Field("id").Eq(id))
+			db.Delete(que)
+
+			return c.String(http.StatusOK, "Success!\n")
+		}
+		return c.String(http.StatusOK, "Failed!\n")
+	})
 	e.Logger.Fatal(e.Start(":3333"))
 }
