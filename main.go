@@ -111,7 +111,7 @@ func main() {
 				} else {
 					status = "Finished"
 				}
-				res += fmt.Sprintf("%v:   %v ----- %v\n", r[i][0], r[i][1], status)
+				res += fmt.Sprintf("%v``%v``%v\n", r[i][0], r[i][1], status)
 			}
 			return c.String(http.StatusOK, res)
 		}
