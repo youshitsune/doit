@@ -86,7 +86,6 @@ func main() {
 		user := c.FormValue("user")
 		password := c.FormValue("password")
 		if user == strings.Trim(auth[0], "\n") && password == strings.Trim(auth[1], "\n") {
-			fmt.Println(task)
 			if task != "" && len(strings.Split(task, "``")) == 1 {
 				addtask(task)
 				return c.String(http.StatusOK, "Success!\n")
@@ -105,13 +104,7 @@ func main() {
 			var res string
 			r := gettasks()
 			for i := range r {
-				var status string
-				if r[i][2] == "false" {
-					status = "Not finished"
-				} else {
-					status = "Finished"
-				}
-				res += fmt.Sprintf("%v``%v``%v\n", r[i][0], r[i][1], status)
+				res += fmt.Sprintf("%v``%v``%v\n", r[i][0], r[i][1], r[i][2])
 			}
 			return c.String(http.StatusOK, res)
 		}
