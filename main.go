@@ -162,5 +162,20 @@ func main() {
 		}
 		return c.NoContent(http.StatusForbidden)
 	})
+
+	e.POST("/reset", func(c echo.Context) error {
+		user := c.FormValue("user")
+		password := c.FormValue("password")
+		id := c.FormValue("id")
+
+		if user == cfg.username && password == cfg.password {
+			update := map[string]interface{}{"status": false}
+			que := q.NewQuery(bucket).Where(q.Field("id").Eq(id))
+			db.Update(que, update)
+
+			return c.String(http.StatusOK, "Success!\n")
+		}
+		return c.NoContent(http.StatusForbidden)
+	})
 	e.Logger.Fatal(e.Start(":" + cfg.port))
 }
