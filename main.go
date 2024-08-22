@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"log"
 	"net/http"
 	"os"
 	"strconv"
@@ -10,6 +9,9 @@ import (
 
 	"math/rand"
 
+	"github.com/knadh/koanf/parsers/yaml"
+	"github.com/knadh/koanf/providers/file"
+	"github.com/knadh/koanf/v2"
 	"github.com/labstack/echo/v4"
 	c "github.com/ostafen/clover/v2"
 	d "github.com/ostafen/clover/v2/document"
@@ -21,6 +23,31 @@ const bucket = "tasks"
 var db, _ = c.Open("")
 
 var letters = []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
+
+var conf = koanf.New(".")
+
+type config struct {
+	port     string
+	username string
+	password string
+}
+
+var cfg = load_config()
+
+func load_config() config {
+	config_path := "/etc/doit/config.yaml"
+	if err := conf.Load(file.Provider(config_path), yaml.Parser()); err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
+
+	cfg := config{}
+	cfg.port = conf.String("port")
+	cfg.username = conf.String("username")
+	cfg.password = conf.String("password")
+
+	return cfg
+}
 
 func random() string {
 	b := make([]rune, 10)
@@ -73,19 +100,13 @@ func main() {
 	defer db.Close()
 	setupdb()
 
-	data, err := os.ReadFile("auth")
-	if err != nil {
-		log.Fatalf("Error while loading auth: %v", err)
-	}
-	auth := strings.Split(string(data), ":")
-
 	e := echo.New()
 
 	e.POST("/new", func(c echo.Context) error {
 		task := c.FormValue("task")
 		user := c.FormValue("user")
 		password := c.FormValue("password")
-		if user == strings.Trim(auth[0], "\n") && password == strings.Trim(auth[1], "\n") {
+		if user == cfg.username && password == cfg.password {
 			if task != "" && len(strings.Split(task, "``")) == 1 {
 				addtask(task)
 				return c.String(http.StatusOK, "Success!\n")
@@ -100,7 +121,7 @@ func main() {
 	e.POST("/list", func(c echo.Context) error {
 		user := c.FormValue("user")
 		password := c.FormValue("password")
-		if user == strings.Trim(auth[0], "\n") && password == strings.Trim(auth[1], "\n") {
+		if user == cfg.username && password == cfg.password {
 			var res string
 			r := gettasks()
 			for i := range r {
@@ -116,7 +137,7 @@ func main() {
 		password := c.FormValue("password")
 		id := c.FormValue("id")
 
-		if user == strings.Trim(auth[0], "\n") && password == strings.Trim(auth[1], "\n") {
+		if user == cfg.username && password == cfg.password {
 			update := make(map[string]interface{})
 			update["status"] = true
 
@@ -133,7 +154,7 @@ func main() {
 		password := c.FormValue("password")
 		id := c.FormValue("id")
 
-		if user == strings.Trim(auth[0], "\n") && password == strings.Trim(auth[1], "\n") {
+		if user == cfg.username && password == cfg.password {
 			que := q.NewQuery(bucket).Where(q.Field("id").Eq(id))
 			db.Delete(que)
 
@@ -141,5 +162,5 @@ func main() {
 		}
 		return c.NoContent(http.StatusForbidden)
 	})
-	e.Logger.Fatal(e.Start(":3333"))
+	e.Logger.Fatal(e.Start(":" + cfg.port))
 }
