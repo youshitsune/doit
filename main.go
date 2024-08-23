@@ -90,6 +90,7 @@ func addtask(value, tag string) {
 	task["status"] = false
 	task["id"] = random()
 	task["tag"] = tag
+	task["note"] = ""
 	for checkids(task["id"].(string)) { // There is a little to no chance this will ever generate same key twice, but better be safe
 		task["id"] = random()
 	}
@@ -194,6 +195,51 @@ func main() {
 		}
 		return c.NoContent(http.StatusForbidden)
 
+	})
+
+	e.POST("/getnote", func(c echo.Context) error {
+		user := c.FormValue("user")
+		password := c.FormValue("password")
+		id := c.FormValue("id")
+		if user == cfg.username && password == cfg.password {
+			que := q.NewQuery(bucket).Where(q.Field("id").Eq(id))
+			d, err := db.FindFirst(que)
+			if err != nil {
+				return c.NoContent(http.StatusBadRequest)
+			}
+
+			return c.String(http.StatusOK, d.Get("note").(string))
+		}
+		return c.NoContent(http.StatusForbidden)
+	})
+
+	e.POST("/newnote", func(c echo.Context) error {
+		user := c.FormValue("user")
+		password := c.FormValue("password")
+		id := c.FormValue("id")
+		note := c.FormValue("note")
+		if user == cfg.username && password == cfg.password {
+			update := map[string]interface{}{"note": note}
+			que := q.NewQuery(bucket).Where(q.Field("id").Eq(id))
+			db.Update(que, update)
+
+			return c.String(http.StatusOK, "Success!\n")
+		}
+		return c.NoContent(http.StatusForbidden)
+	})
+
+	e.POST("/deletenote", func(c echo.Context) error {
+		user := c.FormValue("user")
+		password := c.FormValue("password")
+		id := c.FormValue("id")
+		if user == cfg.username && password == cfg.password {
+			update := map[string]interface{}{"note": ""}
+			que := q.NewQuery(bucket).Where(q.Field("id").Eq(id))
+			db.Update(que, update)
+
+			return c.String(http.StatusOK, "Success!\n")
+		}
+		return c.NoContent(http.StatusForbidden)
 	})
 	e.Logger.Fatal(e.Start(":" + cfg.port))
 }
