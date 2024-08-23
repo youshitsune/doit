@@ -79,16 +79,17 @@ func gettasks() [][]string {
 	res, _ := db.FindAll(q.NewQuery(bucket))
 	for i := range res {
 		status := res[i].Get("status").(bool)
-		r = append(r, []string{res[i].Get("id").(string), res[i].Get("name").(string), strconv.FormatBool(status)})
+		r = append(r, []string{res[i].Get("id").(string), res[i].Get("name").(string), strconv.FormatBool(status), res[i].Get("tag").(string)})
 	}
 	return r
 }
 
-func addtask(value string) {
+func addtask(value, tag string) {
 	task := make(map[string]interface{})
 	task["name"] = value
 	task["status"] = false
 	task["id"] = random()
+	task["tag"] = tag
 	for checkids(task["id"].(string)) { // There is a little to no chance this will ever generate same key twice, but better be safe
 		task["id"] = random()
 	}
@@ -104,11 +105,12 @@ func main() {
 
 	e.POST("/new", func(c echo.Context) error {
 		task := c.FormValue("task")
+		tag := c.FormValue("tag")
 		user := c.FormValue("user")
 		password := c.FormValue("password")
 		if user == cfg.username && password == cfg.password {
 			if task != "" && len(strings.Split(task, "``")) == 1 {
-				addtask(task)
+				addtask(task, tag)
 				return c.String(http.StatusOK, "Success!\n")
 			} else {
 				return c.NoContent(http.StatusBadRequest)
@@ -125,7 +127,7 @@ func main() {
 			var res string
 			r := gettasks()
 			for i := range r {
-				res += fmt.Sprintf("%v``%v``%v\n", r[i][0], r[i][1], r[i][2])
+				res += fmt.Sprintf("%v``%v``%v``%v\n", r[i][0], r[i][1], r[i][2], r[i][3])
 			}
 			return c.String(http.StatusOK, res)
 		}
