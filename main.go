@@ -112,7 +112,7 @@ func main() {
 		if user == cfg.username && password == cfg.password {
 			if task != "" && len(strings.Split(task, "``")) == 1 {
 				addtask(task, tag)
-				return c.String(http.StatusOK, "Success!\n")
+				return c.NoContent(http.StatusOK)
 			} else {
 				return c.NoContent(http.StatusBadRequest)
 			}
@@ -147,7 +147,7 @@ func main() {
 			que := q.NewQuery(bucket).Where(q.Field("id").Eq(id))
 			db.Update(que, update)
 
-			return c.String(http.StatusOK, "Success!\n")
+			return c.NoContent(http.StatusOK)
 		}
 		return c.NoContent(http.StatusForbidden)
 	})
@@ -161,7 +161,7 @@ func main() {
 			que := q.NewQuery(bucket).Where(q.Field("id").Eq(id))
 			db.Delete(que)
 
-			return c.String(http.StatusOK, "Success!\n")
+			return c.NoContent(http.StatusOK)
 		}
 		return c.NoContent(http.StatusForbidden)
 	})
@@ -176,7 +176,7 @@ func main() {
 			que := q.NewQuery(bucket).Where(q.Field("id").Eq(id))
 			db.Update(que, update)
 
-			return c.String(http.StatusOK, "Success!\n")
+			return c.NoContent(http.StatusOK)
 		}
 		return c.NoContent(http.StatusForbidden)
 	})
@@ -191,7 +191,7 @@ func main() {
 			que := q.NewQuery(bucket).Where(q.Field("id").Eq(id))
 			db.Update(que, update)
 
-			return c.String(http.StatusOK, "Success!\n")
+			return c.NoContent(http.StatusOK)
 		}
 		return c.NoContent(http.StatusForbidden)
 
@@ -223,7 +223,7 @@ func main() {
 			que := q.NewQuery(bucket).Where(q.Field("id").Eq(id))
 			db.Update(que, update)
 
-			return c.String(http.StatusOK, "Success!\n")
+			return c.NoContent(http.StatusOK)
 		}
 		return c.NoContent(http.StatusForbidden)
 	})
@@ -237,7 +237,7 @@ func main() {
 			que := q.NewQuery(bucket).Where(q.Field("id").Eq(id))
 			db.Update(que, update)
 
-			return c.String(http.StatusOK, "Success!\n")
+			return c.NoContent(http.StatusOK)
 		}
 		return c.NoContent(http.StatusForbidden)
 	})
@@ -252,7 +252,7 @@ func main() {
 			que := q.NewQuery(bucket).Where(q.Field("id").Eq(id))
 			db.Update(que, update)
 
-			return c.String(http.StatusOK, "Success!\n")
+			return c.NoContent(http.StatusOK)
 		}
 		return c.NoContent(http.StatusForbidden)
 	})
