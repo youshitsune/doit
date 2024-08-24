@@ -1,6 +1,7 @@
 package main
 
 import (
+	"crypto/subtle"
 	"fmt"
 	"net/http"
 	"os"
@@ -13,6 +14,7 @@ import (
 	"github.com/knadh/koanf/providers/file"
 	"github.com/knadh/koanf/v2"
 	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v4/middleware"
 	c "github.com/ostafen/clover/v2"
 	d "github.com/ostafen/clover/v2/document"
 	q "github.com/ostafen/clover/v2/query"
@@ -104,157 +106,112 @@ func main() {
 
 	e := echo.New()
 
+	e.Use(middleware.BasicAuth(func(s1, s2 string, ctx echo.Context) (bool, error) {
+		if subtle.ConstantTimeCompare([]byte(s1), []byte(cfg.username)) == 1 && subtle.ConstantTimeCompare([]byte(s2), []byte(cfg.password)) == 1 {
+			return true, nil
+		}
+		return false, nil
+	}))
 	e.POST("/new", func(c echo.Context) error {
 		task := c.FormValue("task")
 		tag := c.FormValue("tag")
-		user := c.FormValue("user")
-		password := c.FormValue("password")
-		if user == cfg.username && password == cfg.password {
-			if task != "" && len(strings.Split(task, "``")) == 1 {
-				addtask(task, tag)
-				return c.NoContent(http.StatusOK)
-			} else {
-				return c.NoContent(http.StatusBadRequest)
-			}
+		if task != "" && len(strings.Split(task, "``")) == 1 {
+			addtask(task, tag)
+			return c.NoContent(http.StatusOK)
+		} else {
+			return c.NoContent(http.StatusBadRequest)
 		}
-
-		return c.NoContent(http.StatusForbidden)
 	})
 
 	e.POST("/list", func(c echo.Context) error {
-		user := c.FormValue("user")
-		password := c.FormValue("password")
-		if user == cfg.username && password == cfg.password {
-			var res string
-			r := gettasks()
-			for i := range r {
-				res += fmt.Sprintf("%v``%v``%v``%v\n", r[i][0], r[i][1], r[i][2], r[i][3])
-			}
-			return c.String(http.StatusOK, res)
+		var res string
+		r := gettasks()
+		for i := range r {
+			res += fmt.Sprintf("%v``%v``%v``%v\n", r[i][0], r[i][1], r[i][2], r[i][3])
 		}
-		return c.NoContent(http.StatusForbidden)
+		return c.String(http.StatusOK, res)
 	})
 
 	e.POST("/done", func(c echo.Context) error {
-		user := c.FormValue("user")
-		password := c.FormValue("password")
 		id := c.FormValue("id")
 
-		if user == cfg.username && password == cfg.password {
-			update := make(map[string]interface{})
-			update["status"] = true
+		update := make(map[string]interface{})
+		update["status"] = true
 
-			que := q.NewQuery(bucket).Where(q.Field("id").Eq(id))
-			db.Update(que, update)
+		que := q.NewQuery(bucket).Where(q.Field("id").Eq(id))
+		db.Update(que, update)
 
-			return c.NoContent(http.StatusOK)
-		}
-		return c.NoContent(http.StatusForbidden)
+		return c.NoContent(http.StatusOK)
 	})
 
 	e.POST("/delete", func(c echo.Context) error {
-		user := c.FormValue("user")
-		password := c.FormValue("password")
 		id := c.FormValue("id")
 
-		if user == cfg.username && password == cfg.password {
-			que := q.NewQuery(bucket).Where(q.Field("id").Eq(id))
-			db.Delete(que)
+		que := q.NewQuery(bucket).Where(q.Field("id").Eq(id))
+		db.Delete(que)
 
-			return c.NoContent(http.StatusOK)
-		}
-		return c.NoContent(http.StatusForbidden)
+		return c.NoContent(http.StatusOK)
 	})
 
 	e.POST("/reset", func(c echo.Context) error {
-		user := c.FormValue("user")
-		password := c.FormValue("password")
 		id := c.FormValue("id")
 
-		if user == cfg.username && password == cfg.password {
-			update := map[string]interface{}{"status": false}
-			que := q.NewQuery(bucket).Where(q.Field("id").Eq(id))
-			db.Update(que, update)
+		update := map[string]interface{}{"status": false}
+		que := q.NewQuery(bucket).Where(q.Field("id").Eq(id))
+		db.Update(que, update)
 
-			return c.NoContent(http.StatusOK)
-		}
-		return c.NoContent(http.StatusForbidden)
+		return c.NoContent(http.StatusOK)
 	})
 
 	e.POST("/rename", func(c echo.Context) error {
-		user := c.FormValue("user")
-		password := c.FormValue("password")
 		id := c.FormValue("id")
 		task := c.FormValue("task")
-		if user == cfg.username && password == cfg.password {
-			update := map[string]interface{}{"name": task}
-			que := q.NewQuery(bucket).Where(q.Field("id").Eq(id))
-			db.Update(que, update)
+		update := map[string]interface{}{"name": task}
+		que := q.NewQuery(bucket).Where(q.Field("id").Eq(id))
+		db.Update(que, update)
 
-			return c.NoContent(http.StatusOK)
-		}
-		return c.NoContent(http.StatusForbidden)
+		return c.NoContent(http.StatusOK)
 
 	})
 
 	e.POST("/getnote", func(c echo.Context) error {
-		user := c.FormValue("user")
-		password := c.FormValue("password")
 		id := c.FormValue("id")
-		if user == cfg.username && password == cfg.password {
-			que := q.NewQuery(bucket).Where(q.Field("id").Eq(id))
-			d, err := db.FindFirst(que)
-			if err != nil {
-				return c.NoContent(http.StatusBadRequest)
-			}
-
-			return c.String(http.StatusOK, d.Get("note").(string))
+		que := q.NewQuery(bucket).Where(q.Field("id").Eq(id))
+		d, err := db.FindFirst(que)
+		if err != nil {
+			return c.NoContent(http.StatusBadRequest)
 		}
-		return c.NoContent(http.StatusForbidden)
+
+		return c.String(http.StatusOK, d.Get("note").(string))
 	})
 
 	e.POST("/newnote", func(c echo.Context) error {
-		user := c.FormValue("user")
-		password := c.FormValue("password")
 		id := c.FormValue("id")
 		note := c.FormValue("note")
-		if user == cfg.username && password == cfg.password {
-			update := map[string]interface{}{"note": note}
-			que := q.NewQuery(bucket).Where(q.Field("id").Eq(id))
-			db.Update(que, update)
+		update := map[string]interface{}{"note": note}
+		que := q.NewQuery(bucket).Where(q.Field("id").Eq(id))
+		db.Update(que, update)
 
-			return c.NoContent(http.StatusOK)
-		}
-		return c.NoContent(http.StatusForbidden)
+		return c.NoContent(http.StatusOK)
 	})
 
 	e.POST("/deletenote", func(c echo.Context) error {
-		user := c.FormValue("user")
-		password := c.FormValue("password")
 		id := c.FormValue("id")
-		if user == cfg.username && password == cfg.password {
-			update := map[string]interface{}{"note": ""}
-			que := q.NewQuery(bucket).Where(q.Field("id").Eq(id))
-			db.Update(que, update)
+		update := map[string]interface{}{"note": ""}
+		que := q.NewQuery(bucket).Where(q.Field("id").Eq(id))
+		db.Update(que, update)
 
-			return c.NoContent(http.StatusOK)
-		}
-		return c.NoContent(http.StatusForbidden)
+		return c.NoContent(http.StatusOK)
 	})
 
 	e.POST("/edittag", func(c echo.Context) error {
-		user := c.FormValue("user")
-		password := c.FormValue("password")
 		id := c.FormValue("id")
 		tag := c.FormValue("tag")
-		if user == cfg.username && password == cfg.password {
-			update := map[string]interface{}{"tag": tag}
-			que := q.NewQuery(bucket).Where(q.Field("id").Eq(id))
-			db.Update(que, update)
+		update := map[string]interface{}{"tag": tag}
+		que := q.NewQuery(bucket).Where(q.Field("id").Eq(id))
+		db.Update(que, update)
 
-			return c.NoContent(http.StatusOK)
-		}
-		return c.NoContent(http.StatusForbidden)
+		return c.NoContent(http.StatusOK)
 	})
 	e.Logger.Fatal(e.Start(":" + cfg.port))
 }
