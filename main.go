@@ -114,7 +114,7 @@ func main() {
 	}))
 
 	e.RouteNotFound("/*", func(c echo.Context) error {
-		return c.String(http.StatusNotFound, "Are you stupid or something? Oh, you hate reading docs. Just read them, you need them!")
+		return c.String(http.StatusNotFound, "Are you stupid or something? Oh, you hate reading documentation. Just read it!")
 	})
 	e.POST("/new", func(c echo.Context) error {
 		task := c.FormValue("task")
