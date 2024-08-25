@@ -8,7 +8,7 @@ build:
     RUN go build -o output/doit
     SAVE ARTIFACT output/doit AS LOCAL doit
 
-podman:
+docker:
     COPY +build/doit .
     ENTRYPOINT ["/doit/doit"]
     SAVE IMAGE doit:latest
