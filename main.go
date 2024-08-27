@@ -3,10 +3,12 @@ package main
 import (
 	"crypto/subtle"
 	"fmt"
+	"io"
 	"net/http"
 	"os"
 	"strconv"
 	"strings"
+	"text/template"
 
 	"math/rand"
 
@@ -32,6 +34,29 @@ type config struct {
 	port     string
 	username string
 	password string
+}
+
+type Template struct {
+	Templates *template.Template
+}
+
+func (t *Template) Render(w io.Writer, name string, data interface{}, c echo.Context) error {
+	return t.Templates.ExecuteTemplate(w, name, data)
+}
+
+func NewTemplateRenderer(e *echo.Echo, paths ...string) {
+	tmpl := &template.Template{}
+	for i := range paths {
+		template.Must(tmpl.ParseGlob(paths[i]))
+	}
+	t := newTemplate(tmpl)
+	e.Renderer = t
+}
+
+func newTemplate(templates *template.Template) echo.Renderer {
+	return &Template{
+		Templates: templates,
+	}
 }
 
 var cfg = load_config()
@@ -76,6 +101,13 @@ func checkids(id string) bool {
 	return r
 }
 
+type Task struct {
+	Id     string
+	Tag    string
+	Name   string
+	Status string
+}
+
 func gettasks() [][]string {
 	r := make([][]string, 0)
 	res, _ := db.FindAll(q.NewQuery(bucket))
@@ -105,7 +137,8 @@ func main() {
 	setupdb()
 
 	e := echo.New()
-
+	NewTemplateRenderer(e, "public/*.html")
+	e.Static("/static", "static/")
 	e.Use(middleware.BasicAuth(func(s1, s2 string, ctx echo.Context) (bool, error) {
 		if subtle.ConstantTimeCompare([]byte(s1), []byte(cfg.username)) == 1 && subtle.ConstantTimeCompare([]byte(s2), []byte(cfg.password)) == 1 {
 			return true, nil
@@ -116,6 +149,19 @@ func main() {
 	e.RouteNotFound("/*", func(c echo.Context) error {
 		return c.String(http.StatusNotFound, "Are you stupid or something? Oh, you hate reading documentation. Just read it!")
 	})
+
+	e.GET("/", func(c echo.Context) error {
+		r := make([]Task, 0)
+		tasks := gettasks()
+		for i := range tasks {
+			r = append(r, Task{Id: tasks[i][0], Name: tasks[i][1], Status: tasks[i][2], Tag: tasks[i][3]})
+		}
+		res := map[string]interface{}{
+			"items": r,
+		}
+		return c.Render(http.StatusOK, "index", res)
+	})
+
 	e.POST("/new", func(c echo.Context) error {
 		task := c.FormValue("task")
 		tag := c.FormValue("tag")

@@ -1,0 +1,21 @@
+{{ define "index" }}
+<html>
+    <head>
+        <title>DoIt</title>
+        <link href="/static/css/style.css" rel="stylesheet">
+    </head>
+    <body class="vcontainer">
+        {{ range .items }}
+        <div class="task">
+            <h3>{{.Name}}</h3>
+            <p>{{.Tag}}</p>
+            {{if eq .Status "false"}}
+            <p id="notDone">Not finished!</p>
+            {{else}}
+            <p id="done">Finished!</p>
+            {{end}}
+        </div>
+        {{ end }}
+    </body>
+</html>
+{{ end }}
